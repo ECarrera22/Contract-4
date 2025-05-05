@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Contract Agreement</title>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.6/dist/signature_pad.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f9f9f9;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+  </style>
+</head>
+<body class="text-gray-800 p-6">
+  <div class="max-w-2xl mx-auto text-center bg-white p-8 rounded shadow-md">
+    <header class="border-b-4 border-green-600 pb-4 mb-6">
+      <div class="flex flex-col items-center mb-4">
+        <img src="logo.png" alt="Company Logo" class="h-16 mb-2">
+        <div>
+          <h1 class="text-3xl font-bold text-green-700">Maleton Plumbing and Heating</h1>
+          <h2 class="text-xl font-semibold text-gray-700">Service Contract Agreement</h2>
+        </div>
+      </div>
+      <div class="text-sm leading-tight text-gray-700">
+        <p><strong>Contractor:</strong> Marc Maleton</p>
+        <p>Maleton Plumbing and Heating</p>
+        <p>151 Broadmere Rd. Stratford, CT 06614</p>
+        <p>Phone: 203-727-7924</p>
+        <p>Fax: 203-612-6664</p>
+      </div>
+    </header>
+
+    <label class="block mb-2">Select Customer:</label>
+    <select id="customer" class="w-full border border-green-600 p-2 mb-4">
+      <option value="John Doe">John Doe</option>
+      <option value="Jane Smith">Jane Smith</option>
+      <option value="Alice Johnson">Alice Johnson</option>
+    </select>
+
+    <label class="block mb-2">Invoice Number:</label>
+    <input id="invoice" type="text" class="w-full border border-green-600 p-2 mb-4" placeholder="Enter invoice number">
+
+    <div class="border border-green-600 p-4 mb-4 text-left">
+      <p id="contract-text">
+        This contract is made between <strong><span id="client-name">[Client]</span></strong> and the service provider.<br>
+        Invoice Number: <strong><span id="invoice-number">[Invoice]</span></strong><br><br>
+        By signing this document, the client agrees to the terms and conditions of service.
+      </p>
+    </div>
+
+    <label class="block mb-2">Client Signature:</label>
+    <canvas id="signature-pad" class="border border-green-600 w-full h-40 mb-2"></canvas>
+    <button onclick="clearSignature()" class="bg-yellow-400 text-white px-4 py-2 rounded">Clear</button>
+
+    <div class="mt-6">
+      <button onclick="sendContract()" class="bg-green-600 text-white px-6 py-2 rounded">Sign & Send</button>
+    </div>
+  </div>
+
+  <script>
+    emailjs.init("your_emailjs_user_id"); // Replace with your EmailJS user ID
+
+    const signaturePad = new SignaturePad(document.getElementById("signature-pad"));
+
+    const customerEmails = {
+      "John Doe": "john@example.com",
+      "Jane Smith": "jane@example.com",
+      "Alice Johnson": "alice@example.com"
+    };
+
+    const updateContract = () => {
+      const customer = document.getElementById("customer").value;
+      const invoice = document.getElementById("invoice").value;
+      document.getElementById("client-name").innerText = customer;
+      document.getElementById("invoice-number").innerText = invoice;
+    };
+
+    document.getElementById("customer").addEventListener("change", updateContract);
+    document.getElementById("invoice").addEventListener("input", updateContract);
+
+    function clearSignature() {
+      signaturePad.clear();
+    }
+
+    async function sendContract() {
+      if (signaturePad.isEmpty()) {
+        alert("Please provide a signature.");
+        return;
+      }
+
+      updateContract();
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      const customer = document.getElementById("customer").value;
+      const emailTo = customerEmails[customer] || "default@example.com";
+      const invoice = document.getElementById("invoice").value;
+      const contractText = document.getElementById("contract-text").innerText;
+
+      pdf.setFontSize(12);
+      pdf.text(contractText, 10, 20);
+
+      const signatureImage = signaturePad.toDataURL();
+      pdf.addImage(signatureImage, 'PNG', 10, 80, 100, 40);
+
+      const pdfBlob = pdf.output("blob");
+
+      const reader = new FileReader();
+      reader.onloadend = function () {
+        emailjs.send("your_service_id", "your_template_id", {
+          to_email: emailTo,
+          cc_email_1: "maletonm@gmail.com",
+          cc_email_2: "maletonplumbing95@gmail.com",
+          customer_name: customer,
+          invoice_number: invoice,
+          attachment: reader.result
+        });
+        alert("Contract sent to " + emailTo + " and a copy to maletonm@gmail.com & maletonplumbing95@gmail.com");
+      };
+      reader.readAsDataURL(pdfBlob);
+    }
+  </script>
+</body>
+</html>
